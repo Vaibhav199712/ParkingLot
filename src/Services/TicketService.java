@@ -16,25 +16,30 @@ import repositories.VehicleRepository;
 import java.util.Date;
 import java.util.Optional;
 
+import java.util.Date;
+import java.util.Optional;
+
+// internal thing, not talking to client. so do we need DTO here as well?
+// can we return the actual model, Ticket here?
+
 public class TicketService {
 
-    GateRepository gateRepository ;
-    VehicleRepository vehicleRepository ;
-    ParkingLotRepository parkingLotRepository ;
-    TicketRepository ticketRepository ;
+    GateRepository gateRepository;
+    VehicleRepository vehicleRepository;
+    ParkingLotRepository parkingLotRepository;
+    TicketRepository ticketRepository;
 
     public TicketService(GateRepository gateRepository, VehicleRepository vehicleRepository, ParkingLotRepository parkingLotRepository, TicketRepository ticketRepository){
-        this.gateRepository = gateRepository ;
-        this.vehicleRepository = vehicleRepository ;
-        this.parkingLotRepository = parkingLotRepository ;
-        this.ticketRepository = ticketRepository ;
+        this.gateRepository = gateRepository;
+        this.vehicleRepository = vehicleRepository;
+        this.parkingLotRepository = parkingLotRepository;
+        this.ticketRepository = ticketRepository;
     }
 
     public Ticket issueTicket(String vehicleNumber,
                               String ownerName,
                               VehicleType vehicleType,
                               Long gateId) throws GateNotFoundException {
-
         // have a flow chart in mind when you implement a service method.
 
         // create a Ticket Object
@@ -42,13 +47,14 @@ public class TicketService {
         // assigning a parking slot
         // returning the ticket
 
-        Ticket ticket = new Ticket() ;
+        Ticket ticket = new Ticket();
 
         // have to set ticketNumber.
-        // can do this by appending a random number after ticket id.
+        // can do this by appending a random number after ticketid.
         // when do we have a ticket id? when we store it in a database.
         // we will talk about simple id generation.
         // complex ones to be talked in HLD module, in distributed systems.
+
         ticket.setEntryTime(new Date());
 
         // lets set the gate
@@ -63,21 +69,22 @@ public class TicketService {
         // * do gate repo explanation *
 
         // ask gate repository to find gate by id
-        // Gate gate = gateRepository.findGateById(gateNumber);
+//        Gate gate = gateRepository.findGateById(gateNumber);
         // here gate could be null.
         // how can we deal with this? Optional!
-        Optional<Gate> gateOptional = gateRepository.findGateById(gateId) ;
-        // gateOptional.get(); // hint: 'Optional.get()' without 'isPresent()' check
+        Optional<Gate> gateOptional = gateRepository.findGateById(gateId);
+//        gateOptional.get(); // hint: 'Optional.get()' without 'isPresent()' check
         if(!gateOptional.isPresent()){
-            throw new GateNotFoundException("Gate not found for ID " + gateId);
+            throw new GateNotFoundException("Gate not found for id " + gateId);
         }
         // optional looks cleaner, more robust, more properties, more functionalities.
         // you will find optional in a lot of codebases.
-        Gate gate = gateOptional.get() ;
+        Gate gate = gateOptional.get();
         ticket.setGeneratedAt(gate);
 
         // set operator. from where can we get this? the gate object.
         ticket.setGeneratedBy(gate.getCurrentOperator());
+
 
         // now lets set the vehicle
         // should I directly start creating the object of vehicle?
@@ -85,23 +92,28 @@ public class TicketService {
         // is it possible my vehicle is already present in the database? previous customer. coming in daily basis.
         // then we should be checking our database for this existing vehicle.
         // vehicle repository.
-        Vehicle savedVehicle ;
-        Optional<Vehicle> vehicleOptional  = vehicleRepository.getVehicleByVehicleNumber(vehicleNumber) ;
+
+        // * explain vehicle repository *
+        Vehicle savedVehicle;
+        Optional<Vehicle> vehicleOptional = vehicleRepository.getVehicleByVehicleNumber(vehicleNumber);
         if(!vehicleOptional.isPresent()){
             // throw error??
             // instead we should create a new vehicle object, and save it to db for later fetching
-            Vehicle vehicle = new Vehicle() ;
+            Vehicle vehicle = new Vehicle();
             vehicle.setVehicleNumber(vehicleNumber);
-            vehicle.setNameOfOwner(ownerName);
             vehicle.setVehicleType(vehicleType);
+            vehicle.setNameOfOwner(ownerName);
             // save this vehicle to database. Where should I write the save method.
-            savedVehicle = vehicleRepository.saveVehicle(vehicle) ;
-            System.out.println("Vehicle is Saved in db ");
-        }else {
-            System.out.println("Vehicle is already present in database ");
-            savedVehicle = vehicleOptional.get() ;
+            savedVehicle = vehicleRepository.saveVehicle(vehicle);
+            System.out.println("vehicle saved to DB!");
+        } else {
+            System.out.println("This vehicle already exists in my Vehicle Table!");
+            savedVehicle = vehicleOptional.get();
         }
         ticket.setVehicle(savedVehicle);
+
+
+
 
         // assign the slot.
         // based on strategy type.
@@ -117,12 +129,12 @@ public class TicketService {
         // other way is, client gives the parkingLot id, via the scanner machine.
 
         //  * Parking Lot Repository * //
-        Optional<ParkingLot> parkingLotOptional = parkingLotRepository.getParkingLotByGate(gate) ;
+        Optional<ParkingLot> parkingLotOptional = parkingLotRepository.getParkingLotByGate(gate);
         if(!parkingLotOptional.isPresent()){
             // not possible!! so remove optional here!
-            return null ;
+            return null;
         }
-        ParkingLot parkingLot = parkingLotOptional.get() ;
+        ParkingLot parkingLot = parkingLotOptional.get();
         // now we have the parking lot. what should we do now?
         // now we should have the implementation of these strategies. => implement them.
         SlotAllocationStrategyType allocationStrategyType = parkingLot.getSlotAllocationStrategyType();
@@ -132,13 +144,15 @@ public class TicketService {
 
         // now ticket is ready.
         // before the sending the response, I need to something?? Save the ticket to db
-        ticket =ticketRepository.saveTicket(ticket) ;
+        ticket = ticketRepository.saveTicket(ticket);
         // now ticket also has an id.
-        ticket.setTicketNumber("Ticket " + ticket.getId());
-
-        return ticket ;
+        ticket.setTicketNumber("Ticket_" + ticket.getId());
+        return ticket;
     }
 }
+
 // how to handle injections?
 // frameworks help you with that. they help you start your system.
 // but here we have to setup by ourself.
+
+

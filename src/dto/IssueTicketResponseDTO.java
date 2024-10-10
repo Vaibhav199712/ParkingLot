@@ -32,7 +32,8 @@ public class IssueTicketResponseDTO {
         this.failureMessage = failureMessage;
     }
 
-    public  getResponseStatus() {
-        return null ;
+    public ResponseStatus getResponseStatus() {
+        return responseStatus;
     }
+
 }
